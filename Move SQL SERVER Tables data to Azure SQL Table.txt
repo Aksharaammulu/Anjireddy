@@ -1,0 +1,66 @@
+import pyodbc
+
+from azure.identity import DefaultAzureCredential
+
+from azure.keyvault.secrets import SecretClient
+
+
+# Connect to on-premise SQL Server
+
+server = 'migratingdatafromoneservertoanother.database.windows.net'
+
+database = 'Akshara'
+
+username = 'Reddy'
+
+password = 'Anji@1994'
+
+conn_str = f'DRIVER=SQL Server;SERVER={server};DATABASE={database};UID={username};PWD={password}'
+
+on_premise_conn = pyodbc.connect(conn_str)
+print(on_premise_conn)
+
+# Connect to Azure SQL
+
+# set up connection to destination database
+azure_sql_conn = pyodbc.connect("""Driver={ODBC Driver 18 for SQL Server};
+                           Server=tcp:migratingdata.database.windows.net,1433;
+                           Database=Tanubuddy;
+                           Uid=Buddy;
+                           Pwd=Tanu@2016;
+                           Encrypt=yes;
+                           TrustServerCertificate=no;
+                           Connection Timeout=30;""")
+print(azure_sql_conn)
+
+
+# Retrieve data from on-premise SQL Server
+
+cursor = on_premise_conn.cursor()
+
+cursor.execute('SELECT * FROM carfile')
+
+table_data = cursor.fetchall()
+print(table_data)
+
+# Insert data into Azure SQL
+
+cursor = azure_sql_conn.cursor()
+
+for row in table_data:
+
+
+     cursor.execute(f"INSERT INTO carfile VALUES ({', '.join(['?' for _ in row])})", row)
+
+azure_sql_conn.commit()
+
+
+# Close connections
+
+on_premise_conn.close()
+
+azure_sql_conn.close()
+
+
+
+
