@@ -1,0 +1,50 @@
+#import necessary libraries
+import pyodbc
+import warnings
+warnings.filterwarnings("ignore")
+from azure.storage.blob import BlobServiceClient, BlobClient, ContainerClient
+
+
+#create a connction strings
+connection = pyodbc.connect("""Driver={ODBC Driver 18 for SQL Server};
+                            Server=tcp:practicearea.database.windows.net,1433;
+                            Database=anjiworks;
+                            Uid=royality;
+                            Pwd=Reddys2050;
+                            Encrypt=yes;
+                            TrustServerCertificate=no;
+                            Connection Timeout=30;""")
+
+# SQL query to select all data from a table
+query = "SELECT * FROM Covid_live"
+
+# Read data into Pandas DataFrame
+df = pd.read_sql(query, connection)
+
+# Close database connection
+connection.close()
+
+# Azure Blob Storage credentials
+account_name = 'anjidataworks'
+account_key = 'ZXgqLL5RDR8O1kSxOnqS426rWUacuv7Ii6x2L+rB27OOLeHRAxF3WmaHc4IJaWxCMSngLyOlVBjt+ASt6t5dLg=='
+container_name = 'storingmssql'
+
+
+# Create BlobServiceClient instance
+blob_service_client = BlobServiceClient(f"https://{account_name}.blob.core.windows.net/", account_key)
+
+
+# Create a new container if it doesn't already exist
+container_client = blob_service_client.get_container_client(container_name)
+if not container_client.exists():
+    container_client.create_container()
+    
+    
+# Convert DataFrame to CSV and upload to Azure Blob Storage
+csv_data = df.to_csv(index=False)
+blob_client = blob_service_client.get_blob_client(container=container_name, blob=f"your_blob_name.csv")
+blob_client.upload_blob(csv_data, overwrite=True)
+
+
+# Confirm the blob upload
+print(f"File uploaded: {blob_client.blob_name}")
